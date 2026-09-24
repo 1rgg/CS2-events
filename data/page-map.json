@@ -1,0 +1,50 @@
+{
+  "generatedAt": "2026-09-24T11:00:00+08:00",
+  "source": "Liquipedia S-Tier Tournaments/Post 2023 的渲染 HTML 链接列表（人工核对）",
+  "howToRefresh": "运行 node tools/resolve-pages.js 可自动重新生成并校验此文件。该脚本已改为批量接口，全部赛事只需约 4 次请求。",
+  "warning": "Liquipedia 对高频访问会临时封禁 IP。请勿频繁请求，服务端已加入 3 秒最小请求间隔、429 全局冷却与磁盘缓存。",
+  "verifiedBy": "infobox-sdate-edate",
+  "pages": {
+    "iem-cologne-major": "Intel Extreme Masters/2026/Cologne",
+    "iem-krakow": "Intel Extreme Masters/2026/Kraków",
+    "iem-rio": "Intel Extreme Masters/2026/Rio",
+    "iem-atlanta": "Intel Extreme Masters/2026/Atlanta",
+    "iem-beijing": "Intel Extreme Masters/2026/Beijing",
+    "esl-pro-league-s23": "ESL/Pro League/Season 23",
+    "esl-pro-league-s24": "ESL/Pro League/Season 24",
+    "blast-bounty-s1": "BLAST/Bounty/2026/Winter",
+    "blast-bounty-s2": "BLAST/Bounty/2026/Summer",
+    "blast-open-rotterdam": "BLAST/Open/2026/Spring",
+    "blast-open-porto": "BLAST/Open/2026/Fall",
+    "blast-rivals-s1": "BLAST/Rivals/2026/Spring",
+    "blast-rivals-s2": "BLAST/Rivals/2026/Fall",
+    "pgl-cluj-napoca": "PGL/2026/Cluj-Napoca",
+    "pgl-bucharest": "PGL/2026/Summer",
+    "pgl-astana": "PGL/2026/Astana",
+    "pgl-masters-bucharest": "PGL/2026/Masters",
+    "pgl-major-singapore": "PGL/2026/Singapore",
+    "fissure-playground-3": "FISSURE/Playground/3",
+    "ewc-2026": "Esports World Cup/2026",
+    "cac-2026": "CS Asia Championships/2026",
+    "thunderpick-world-championship": "Thunderpick/World Championship/2026",
+    "starladder-starseries-20": "StarLadder/StarSeries/2026/Fall"
+  },
+  "unverified": {
+    "pgl-bucharest": "PGL/2026/Summer 是按排除法推断（PGL 2026 仅剩此页未归属），未做 Infobox 校验。"
+  },
+  "unmatched": {
+    "stake-ranked-1": "Stake Ranked 第 1 期",
+    "stake-ranked-2": "Stake Ranked 第 2 期",
+    "stake-ranked-3": "Stake Ranked 第 3 期",
+    "stake-ranked-4": "Stake Ranked 第 4 期",
+    "stake-ranked-5": "Stake Ranked 第 5 期",
+    "stake-ranked-6": "Stake Ranked 第 6 期",
+    "asian-champions-league": "亚洲冠军联赛",
+    "xse-pro-league": "XSE 职业联赛",
+    "1win-private-club-1": "1win Private Club 第 1 站",
+    "1win-private-club-2": "1win Private Club 第 2 站",
+    "logitech-g-play-connect": "罗技 G Play Connect",
+    "esports-nations-cup": "电子竞技国家杯",
+    "extremesland-2026": "极限之地 2026"
+  }
+}

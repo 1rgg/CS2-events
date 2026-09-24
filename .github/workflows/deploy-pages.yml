@@ -1,0 +1,70 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # 每天两次尝试刷新赛程快照（Liquipedia 的赛事时间轴）
+    - cron: '17 1,13 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出
+        uses: actions/checkout@v4
+
+      - name: 准备 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 运行解析器测试
+        run: node tools/parser-test.js
+
+      - name: 运行前端冒烟测试
+        run: node tools/smoke-test.js
+
+      - name: 尝试刷新赛程快照
+        # Liquipedia 对数据中心 IP 较严格，失败属预期；此处不阻断构建
+        continue-on-error: true
+        run: node tools/build-snapshot.js
+
+      - name: 组装静态站点
+        run: |
+          mkdir -p _site
+          cp index.html _site/
+          cp -r assets data _site/
+          if [ -f calendar.html ]; then cp calendar.html _site/; fi
+          touch _site/.nojekyll
+          echo "--- 站点内容 ---"
+          find _site -type f | sort
+
+      - name: 配置 Pages
+        uses: actions/configure-pages@v5
+
+      - name: 上传站点产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 部署到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS2 2026 赛季赛事行程表（修订版）</title>
+<style>
+  :root{
+    --bg:#FFFFFF;
+    --bg-soft:#F7F6F2;
+    --bg-mid:#F1EFE8;
+    --line:#E2E0D8;
+    --line-strong:#C9C7BD;
+    --text:#20201E;
+    --text-2:#5F5E5A;
+    --text-3:#8A8880;
+    --major-line:#BA7517;
+    --major-bg:#FAEEDA;
+    --major-text:#633806;
+    --cn:#0F6E56;
+    --fix:#A32D2D;
+    --fix-bg:#FCEBEB;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    padding:48px 32px 72px;
+    background:var(--bg-soft);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:14px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+  header{border-bottom:1px solid var(--line-strong);padding-bottom:20px;margin-bottom:28px;}
+  .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);margin:0 0 10px;}
+  h1{font-size:30px;font-weight:500;letter-spacing:-.01em;margin:0 0 12px;line-height:1.25;}
+  .sub{font-size:14px;color:var(--text-2);margin:0;max-width:660px;}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;}
+  .pill{font-size:12px;padding:3px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--text-2);}
+  h2{font-size:17px;font-weight:500;margin:40px 0 14px;display:flex;align-items:center;gap:10px;}
+  h2 .bar{width:3px;height:16px;border-radius:2px;background:var(--major-line);}
+  h2 .bar.blue{background:#185FA5;}
+  h2 .bar.red{background:var(--fix);}
+  table{width:100%;border-collapse:collapse;background:var(--bg);border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  thead th{font-size:12px;font-weight:500;color:var(--text-2);text-align:left;padding:11px 14px;background:var(--bg-mid);border-bottom:1px solid var(--line);white-space:nowrap;}
+  tbody td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#FCFCFA;}
+  .d{white-space:nowrap;color:var(--text-2);font-variant-numeric:tabular-nums;font-size:13px;}
+  .name{font-weight:500;}
+  .name .tag{display:inline-block;margin-left:8px;font-size:11px;font-weight:400;padding:1px 7px;border-radius:4px;vertical-align:1px;}
+  .tag.major{background:var(--major-bg);color:var(--major-text);border:1px solid var(--major-line);}
+  .tag.cn{background:#E1F5EE;color:var(--cn);border:1px solid var(--cn);}
+  .tag.now{background:#FCEBEB;color:var(--fix);border:1px solid #E24B4A;}
+  .tag.fix{background:var(--fix-bg);color:var(--fix);border:1px solid #E24B4A;}
+  .loc{color:var(--text-2);font-size:13px;}
+  .money{white-space:nowrap;font-variant-numeric:tabular-nums;font-size:13px;color:var(--text-2);}
+  .win{font-size:13px;color:var(--text-2);white-space:nowrap;}
+  .win.empty{color:var(--text-3);}
+  tr.major-row{background:#FFFBF3;}
+  tr.major-row:hover{background:#FFF7E8;}
+  tr.cn-row{background:#F5FCF9;}
+  tr.cn-row:hover{background:#EDF9F4;}
+  .note{margin-top:32px;padding:16px 18px;background:var(--bg);border:1px solid var(--line);border-radius:10px;font-size:13px;color:var(--text-2);}
+  .note p{margin:0 0 8px;}
+  .note p:last-child{margin-bottom:0;}
+  .note b{font-weight:500;color:var(--text);}
+  .note ul{margin:6px 0 0;padding-left:20px;}
+  .note li{margin-bottom:6px;}
+  footer{margin-top:36px;font-size:12px;color:var(--text-3);border-top:1px solid var(--line);padding-top:16px;}
+  @media (max-width:720px){
+    body{padding:28px 14px 48px;}
+    h1{font-size:23px;}
+    table{font-size:13px;}
+    thead th,tbody td{padding:9px 10px;}
+    .hide-sm{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="kicker">Counter-Strike 2 · Season 2026 · Rev.2</p>
+  <h1>CS2 2026 赛季赛事行程表</h1>
+  <p class="sub">日期已按各赛事主办方官方页面（ESL / BLAST / PGL）逐条复核，共修正 7 处。赛事地点、场馆阶段与奖金池口径同步更新。</p>
+  <div class="meta">
+    <span class="pill">两届 Major</span>
+    <span class="pill">24 站一线赛事</span>
+    <span class="pill">中国境内 4 站 + 中国香港 1 站</span>
+    <span class="pill">修订于 2026 年 9 月 23 日</span>
+  </div>
+</header>
+
+<h2><span class="bar red"></span>本次修订（共 7 处）</h2>
+<table>
+  <thead><tr><th>赛事</th><th>原文</th><th>更正为</th></tr></thead>
+  <tbody>
+    <tr><td class="name">FISSURE Playground 3</td><td class="loc">中国 · 深圳，9月7–13日</td><td class="loc">中国 · 苏州（SND 文体中心），<b>9月8–13日</b></td></tr>
+    <tr><td class="name">PGL 克卢日-纳波卡</td><td class="loc">2月14–22日</td><td class="loc">2月12–22日</td></tr>
+    <tr><td class="name">PGL 布加勒斯特</td><td class="loc">4月3–11日</td><td class="loc">4月2–11日</td></tr>
+    <tr><td class="name">PGL 阿斯塔纳</td><td class="loc">5月9–17日</td><td class="loc">5月7–17日</td></tr>
+    <tr><td class="name">BLAST 波尔图公开赛</td><td class="loc">8月24日–9月6日</td><td class="loc">8月26日–9月6日</td></tr>
+    <tr><td class="name">PGL Masters 布加勒斯特</td><td class="loc">10月22日–11月1日，地点存疑</td><td class="loc">10月22–31日，布加勒斯特（原定贝尔格莱德）</td></tr>
+    <tr><td class="name">BLAST Rivals 第二季</td><td class="loc">中国香港，11月9–15日</td><td class="loc">中国香港，<b>11月8–15日</b></td></tr>
+  </tbody>
+</table>
+
+<h2><span class="bar"></span>上半赛季 · 通向科隆</h2>
+<table>
+  <thead><tr><th>日期</th><th>赛事</th><th>地点</th><th class="hide-sm">奖金（美元）</th><th>冠军</th></tr></thead>
+  <tbody>
+    <tr><td class="d">1月12–25日</td><td class="name">BLAST Bounty 第一季</td><td class="loc">线上 + 马耳他</td><td class="money hide-sm">$1,150,000</td><td class="win">PARIVISION</td></tr>
+    <tr><td class="d">1月28日–2月8日</td><td class="name">IEM 克拉科夫</td><td class="loc">波兰 · 克拉科夫</td><td class="money hide-sm">$1,250,000</td><td class="win">Vitality</td></tr>
+    <tr><td class="d">2月12–22日</td><td class="name">PGL 克卢日-纳波卡</td><td class="loc">罗马尼亚 · 克卢日-纳波卡</td><td class="money hide-sm">$1,250,000</td><td class="win">Vitality</td></tr>
+    <tr><td class="d">2月27日–3月15日</td><td class="name">ESL 职业联赛 S23</td><td class="loc">线上 + 瑞典 · 斯德哥尔摩（Annexet）<br><span class="loc">线下决赛 3月13–15日</span></td><td class="money hide-sm">$1,000,000</td><td class="win">NAVI</td></tr>
+    <tr><td class="d">3月18–29日</td><td class="name">BLAST 鹿特丹公开赛</td><td class="loc">丹麦 · 哥本哈根（小组赛）+ 荷兰 · 鹿特丹（决赛）</td><td class="money hide-sm">$1,100,000</td><td class="win">Vitality</td></tr>
+    <tr><td class="d">4月2–11日</td><td class="name">PGL 布加勒斯特</td><td class="loc">罗马尼亚 · 布加勒斯特</td><td class="money hide-sm">$1,250,000</td><td class="win">FUT Esports</td></tr>
+    <tr><td class="d">4月13–19日</td><td class="name">IEM 里约</td><td class="loc">巴西 · 里约热内卢</td><td class="money hide-sm">$1,000,000</td><td class="win">Vitality</td></tr>
+    <tr><td class="d">4月29日–5月3日</td><td class="name">BLAST Rivals 第一季</td><td class="loc">美国 · 沃思堡（Dickies Arena）</td><td class="money hide-sm">$1,000,000</td><td class="win">Vitality</td></tr>
+    <tr><td class="d">5月7–17日</td><td class="name">PGL 阿斯塔纳</td><td class="loc">哈萨克斯坦 · 阿斯塔纳（Barys Arena）<br><span class="loc">场馆阶段 5月15–17日</span></td><td class="money hide-sm">$1,600,000</td><td class="win">Team Spirit</td></tr>
+    <tr><td class="d">5月11–17日</td><td class="name">IEM 亚特兰大</td><td class="loc">美国 · 亚特兰大</td><td class="money hide-sm">$1,000,000</td><td class="win">NAVI</td></tr>
+    <tr class="cn-row"><td class="d">5月19–24日</td><td class="name">CS 亚洲锦标赛<span class="tag cn">中国站</span></td><td class="loc">中国 · 上海（完美世界主办）</td><td class="money hide-sm">$1,000,000</td><td class="win">Legacy</td></tr>
+    <tr class="major-row"><td class="d">6月2–21日</td><td class="name">IEM 科隆 Major<span class="tag major">Major</span></td><td class="loc">德国 · 科隆（Lanxess Arena）<br><span class="loc">场馆阶段 6月18–21日</span></td><td class="money hide-sm">$1,250,000</td><td class="win">Falcons</td></tr>
+  </tbody>
+</table>
+
+<h2><span class="bar"></span>下半赛季 · 通向新加坡</h2>
+<table>
+  <thead><tr><th>日期</th><th>赛事</th><th>地点</th><th class="hide-sm">奖金（美元）</th><th>冠军</th></tr></thead>
+  <tbody>
+    <tr class="cn-row"><td class="d">6月29日–7月12日</td><td class="name">XSE 职业联赛<span class="tag cn">中国站</span></td><td class="loc">中国 · 广州</td><td class="money hide-sm">$1,000,000</td><td class="win empty">已结束</td></tr>
+    <tr><td class="d">7月21日–8月2日</td><td class="name">BLAST Bounty 第二季</td><td class="loc">线上 + 马耳他（BLAST Studio）</td><td class="money hide-sm">$1,150,000</td><td class="win">MOUZ</td></tr>
+    <tr><td class="d">8月12–23日</td><td class="name">电竞世界杯 (EWC)</td><td class="loc">法国 · 巴黎<span class="tag fix">信源存疑</span><br><span class="loc">部分信源仍记为沙特 · 利雅得</span></td><td class="money hide-sm">$2,000,000</td><td class="win">Team Spirit</td></tr>
+    <tr><td class="d">8月26日–9月6日</td><td class="name">BLAST 波尔图公开赛</td><td class="loc">丹麦 · 哥本哈根（小组赛）+ 葡萄牙 · 波尔图（决赛）</td><td class="money hide-sm">$1,100,000</td><td class="win">Team Spirit</td></tr>
+    <tr class="cn-row"><td class="d">9月8–13日</td><td class="name">FISSURE Playground 3<span class="tag cn">中国站</span><span class="tag fix">已更正</span></td><td class="loc">中国 · 苏州（SND 文体中心）<br><span class="loc">原计划深圳；原编号为 Playground 5</span></td><td class="money hide-sm">$1,000,000</td><td class="win">Legacy <span class="loc">（亚军 G2）</span></td></tr>
+    <tr><td class="d">9月17–20日</td><td class="name">StarLadder StarSeries Fall</td><td class="loc">西班牙 · 巴塞罗那</td><td class="money hide-sm">$500,000</td><td class="win empty">刚结束</td></tr>
+    <tr><td class="d">10月3–11日</td><td class="name">ESL 职业联赛 S24<span class="tag now">即将开赛</span></td><td class="loc">波兰 · 卡托维兹（Spodek Arena）<br><span class="loc">场馆阶段 10月9–11日</span></td><td class="money hide-sm">$1,000,000</td><td class="win empty">—</td></tr>
+    <tr><td class="d">10月14–18日</td><td class="name">Thunderpick 世界锦标赛</td><td class="loc">马耳他</td><td class="money hide-sm">$1,000,000</td><td class="win empty">—</td></tr>
+    <tr><td class="d">10月22–31日</td><td class="name">PGL Masters 布加勒斯特<span class="tag fix">已更正</span></td><td class="loc">罗马尼亚 · 布加勒斯特<br><span class="loc">原定塞尔维亚 · 贝尔格莱德，2025 年 12 月改址</span></td><td class="money hide-sm">$1,250,000</td><td class="win empty">—</td></tr>
+    <tr class="cn-row"><td class="d">11月2–8日</td><td class="name">IEM 北京<span class="tag cn">中国站</span></td><td class="loc">中国 · 北京<br><span class="loc">场馆阶段 11月6–8日</span></td><td class="money hide-sm">$1,250,000</td><td class="win empty">—</td></tr>
+    <tr class="cn-row"><td class="d">11月8–15日</td><td class="name">BLAST Rivals 第二季<span class="tag cn">中国香港站</span><span class="tag fix">已更正</span></td><td class="loc">中国香港 · 亚洲国际博览馆（最后三天）</td><td class="money hide-sm">$1,000,000</td><td class="win empty">—</td></tr>
+    <tr><td class="d">11月10–15日</td><td class="name">电子竞技国家杯 (ENC)</td><td class="loc">沙特 · 利雅得</td><td class="money hide-sm">$1,320,000</td><td class="win empty">—</td></tr>
+    <tr class="major-row"><td class="d">11月25日–12月13日</td><td class="name">PGL 新加坡 Major<span class="tag major">Major</span></td><td class="loc">新加坡 · 加冷（Singapore Indoor Stadium）<br><span class="loc">冠军阶段 12月10–13日</span></td><td class="money hide-sm">$1,250,000</td><td class="win empty">—</td></tr>
+  </tbody>
+</table>
+
+<h2><span class="bar blue"></span>已推迟或取消的赛事</h2>
+<table>
+  <thead><tr><th>原定日期</th><th>赛事</th><th>原定地点</th><th>状态</th></tr></thead>
+  <tbody>
+    <tr><td class="d">4月20–26日</td><td class="name">FISSURE Playground 3</td><td class="loc">中国 · 深圳</td><td class="loc">推迟，后并入 9 月苏州站</td></tr>
+    <tr><td class="d">7月13–19日</td><td class="name">FISSURE Playground 4</td><td class="loc">待定</td><td class="loc">取消</td></tr>
+    <tr><td class="d">10月初</td><td class="name">PGL 系列赛一站</td><td class="loc">待定</td><td class="loc">取消</td></tr>
+  </tbody>
+</table>
+
+<h2><span class="bar blue"></span>观赛时间参考（北京时间）</h2>
+<table>
+  <thead><tr><th>赛区</th><th>典型开赛时段</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td class="name">中国 / 中国香港 / 新加坡</td><td class="d">14:00 – 23:00</td><td class="loc">零时差，全程可看，含决赛</td></tr>
+    <tr><td class="name">欧洲（波兰、马耳他、罗马尼亚、西班牙）</td><td class="d">17:00 – 次日 02:00</td><td class="loc">夏令时比北京时间慢 6 小时，决赛常在北京时间凌晨</td></tr>
+    <tr><td class="name">中东（利雅得）</td><td class="d">18:00 – 次日 01:00</td><td class="loc">比北京时间慢 5 小时</td></tr>
+    <tr><td class="name">美洲（里约、亚特兰大、沃思堡）</td><td class="d">22:00 – 次日 06:00</td><td class="loc">时差 11–13 小时，需熬夜</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <p><b>日期为什么会有多个版本。</b>各站统计口径不同：主办方官方页通常给出「含线上阶段 + 场馆阶段」的完整赛期，第三方日历往往只记场馆阶段或决赛周末。本表以主办方官方页面（pglesport.com、esl-one.com、blast.tv）为准，并标注场馆阶段日期。</p>
+  <p><b>仍在存疑的一项。</b>电竞世界杯（EWC）2026 的 CS2 项目地点：BLAST 官方赛程页与部分赛事结果站记为巴黎，另有多个信源记为沙特利雅得。该赛事由电竞世界杯基金会运营，地点异动较为罕见，建议以 EWC 官方公告为准。</p>
+  <p><b>仍需注意。</b></p>
+  <ul>
+    <li>PGL 官网将新加坡 Major 记为 11月22日起，场馆方（新加坡体育城）则记为 11月25日–12月13日，本表采信后者。</li>
+    <li>BLAST Rivals 第一季结束日有 5月3日与 5月4日两种记载。</li>
+    <li>各站奖金数字差异主要来自是否计入俱乐部（Club Share）分成——多数赛事奖金池为「选手 + 俱乐部」两部分之和。</li>
+    <li>FISSURE Playground 系列编号混乱：因第三、四届取消，9 月苏州站由原「Playground 5」改名而来。</li>
+  </ul>
+  <p><b>赛制背景。</b>2026 年 Valve 结束合作伙伴联赛制度，赛事体系全面开放，故赛事密度显著高于往年。全年分上下两个赛季，各以一届 Major 收口：6 月 IEM 科隆 Major、11–12 月 PGL 新加坡 Major，均为 32 队、125 万美元。新加坡站是东南亚首次举办 CS2 Major，也是首个设置季军争夺战的 Major。</p>
+</div>
+
+<footer>整理于 2026 年 9 月 23 日 · Rev.2 · 依据 BLAST.tv、ESL Pro Tour、PGL Esports 官方页面及新加坡体育城、HLTV 等信源交叉核对</footer>
+
+</div>
+</body>
+</html>

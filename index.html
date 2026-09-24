@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="CS2 热门赛事实时看板：全年赛历、今日比赛与比分、时间范围筛选，数据来自 Liquipedia。">
+<title>CS2 赛事实时看板 · 2026 赛季</title>
+<link rel="stylesheet" href="assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231a5fa5'/><circle cx='16' cy='16' r='8' fill='none' stroke='white' stroke-width='2'/><path d='M16 8v2M16 22v2M8 16h2M22 16h2' stroke='white' stroke-width='2.5' stroke-linecap='round'/><circle cx='16' cy='16' r='2.5' fill='white'/></svg>">
+</head>
+<body>
+
+<div class="statusbar">
+  <div class="statusbar-inner">
+    <span class="brand">CS2 赛事实时看板</span>
+    <span class="src-badge"><span class="dot" id="srcDot"></span><span id="srcLabel">加载中…</span></span>
+    <span class="spacer"></span>
+    <span class="sep"></span>
+    <span id="lastUpdated" class="tnum">—</span>
+    <span id="countdown" class="tnum">—</span>
+    <button class="chip tiny" id="refreshNow" type="button">刷新</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <header>
+    <p class="kicker">Counter-Strike 2 · Season 2026</p>
+    <h1>CS2 热门赛事实时看板</h1>
+    <p class="lede">
+      全年一级赛事的赛历、进行中进度与开赛倒计时，支持按时间范围筛选，
+      并在赛事进行期间展示当日对阵与逐图比分。
+    </p>
+  </header>
+
+  <section class="yearnav" aria-label="年度时间轴">
+    <div class="yearnav-head">
+      <span class="yearnav-title">2026 赛季总览</span>
+      <span class="yearnav-hint">点击色条跳转到该赛事 · 点击月份筛选当月</span>
+    </div>
+    <div class="yearnav-track" id="yearnavTrack"></div>
+    <div class="yearnav-scale" id="yearnavScale"></div>
+    <div class="yearnav-legend">
+      <span><i style="background:#1a5fa5"></i>一线赛事</span>
+      <span><i style="background:#b0721a"></i>Major</span>
+      <span><i style="background:#0d6b54"></i>零时差站</span>
+      <span><i style="background:#c0392b"></i>今天</span>
+    </div>
+  </section>
+
+  <section class="metrics" aria-label="总览指标">
+    <div class="metric">
+      <p class="metric-label">正在进行的赛事</p>
+      <p class="metric-value" id="mLive">—</p>
+      <p class="metric-sub" id="mLiveSub">—</p>
+    </div>
+    <div class="metric">
+      <p class="metric-label">30 天内开赛</p>
+      <p class="metric-value" id="mSoon">—</p>
+      <p class="metric-sub" id="mSoonSub">—</p>
+    </div>
+    <div class="metric">
+      <p class="metric-label">本赛季剩余</p>
+      <p class="metric-value" id="mRemaining">—</p>
+      <p class="metric-sub" id="mRemainingSub">—</p>
+    </div>
+    <div class="metric">
+      <p class="metric-label">零时差赛事</p>
+      <p class="metric-value" id="mChina">—</p>
+      <p class="metric-sub" id="mChinaSub">—</p>
+    </div>
+  </section>
+
+  <section class="section" aria-label="比赛">
+    <div class="section-head">
+      <span class="section-title">当日比赛</span>
+      <span class="section-sub" id="matchesSub">—</span>
+    </div>
+    <div class="matches" id="matchesPanel"></div>
+  </section>
+
+  <section class="toolbar" aria-label="筛选">
+    <div class="toolbar-inner">
+
+      <div class="toolrow">
+        <span class="toolrow-label">时间</span>
+        <div class="chips">
+          <button class="chip" type="button" data-range="all" aria-pressed="true">全部</button>
+          <button class="chip" type="button" data-range="today" aria-pressed="false">今天</button>
+          <button class="chip" type="button" data-range="next7" aria-pressed="false">未来 7 天</button>
+          <button class="chip" type="button" data-range="next30" aria-pressed="false">未来 30 天</button>
+          <button class="chip" type="button" data-range="thisMonth" aria-pressed="false">本月</button>
+          <button class="chip" type="button" data-range="next90" aria-pressed="false">未来 90 天</button>
+          <button class="chip" type="button" data-range="custom" aria-pressed="false">自定义</button>
+        </div>
+        <div class="daterange" id="customRange" style="display:none">
+          <input type="date" id="rangeFrom" aria-label="开始日期">
+          <span>→</span>
+          <input type="date" id="rangeTo" aria-label="结束日期">
+        </div>
+      </div>
+
+      <div class="toolrow">
+        <span class="toolrow-label">类型</span>
+        <div class="chips">
+          <button class="chip" type="button" data-scope="all" aria-pressed="true">全部</button>
+          <button class="chip" type="button" data-scope="major" aria-pressed="false">仅 Major</button>
+          <button class="chip" type="button" data-scope="china" aria-pressed="false">零时差站</button>
+          <button class="chip" type="button" data-scope="upcoming" aria-pressed="false">未开始</button>
+          <button class="chip" type="button" data-scope="finished" aria-pressed="false">已结束</button>
+        </div>
+        <span class="spacer"></span>
+        <button class="chip" type="button" id="exportIcs">导出 .ics</button>
+      </div>
+
+      <div class="toolrow">
+        <span class="toolrow-label">主办方</span>
+        <div class="chips">
+          <button class="chip" type="button" data-org="all" aria-pressed="true">全部</button>
+          <button class="chip" type="button" data-org="ESL" aria-pressed="false">ESL</button>
+          <button class="chip" type="button" data-org="BLAST" aria-pressed="false">BLAST</button>
+          <button class="chip" type="button" data-org="PGL" aria-pressed="false">PGL</button>
+          <button class="chip" type="button" data-org="StarLadder" aria-pressed="false">StarLadder</button>
+          <button class="chip" type="button" data-org="other" aria-pressed="false">其他</button>
+        </div>
+      </div>
+
+      <div class="toolrow">
+        <div class="toolbar-summary" id="toolbarSummary">—</div>
+      </div>
+
+    </div>
+  </section>
+
+  <main id="list" aria-live="polite"></main>
+
+  <details class="disclosure">
+    <summary>数据来源与口径说明</summary>
+    <div class="disclosure-body">
+      <p><b>实时层。</b>站点通过本地 Node 代理请求 Liquipedia：赛事日期取自
+        <code>S-Tier Tournaments/Post 2023</code> 页面中的赛事时间轴；
+        逐场比赛则按赛事抓取对应页面的子阶段页（如 <code>/Playoffs</code>、<code>/Stage 3</code>），
+        解析其中的对阵、时间与逐图比分。全程不需要任何 API Key。</p>
+      <p><b>兜底层。</b>若代理不可用（例如直接以 <code>file://</code> 打开，或访问 GitHub Pages 上的托管版），
+        站点自动回落到内置的 <code>data/tournaments.json</code> 快照。赛历功能完整，只是不再自动更新、也没有逐场数据。</p>
+      <p><b>托管版的差异。</b>GitHub Pages 只能托管静态文件，无法运行 Node 代理，因此托管版用的是构建时烘焙进仓库的赛程快照；
+        流水线每天会尝试刷新两次（Liquipedia 对数据中心 IP 较严格，刷新失败时会保留原数据）。
+        想要实时数据，把仓库克隆到本地执行 <code>node server.js</code>。</p>
+      <p><b>为什么需要本地服务。</b>Liquipedia 的 <code>api.php</code> 不返回
+        <code>Access-Control-Allow-Origin</code>，浏览器直连会被 CORS 拦截；其接口条款同时要求
+        使用可识别的 User-Agent，而浏览器不允许自定义该请求头。代理内置缓存并把请求间隔控制在
+        2 秒以上，以遵守对方的接口频率要求。</p>
+      <p><b>逐场数据的限制。</b>为避免给对方接口造成压力，时间范围超过 21 天时不会拉取逐场数据；
+        另外，并非所有赛事都在 Liquipedia 上有独立的比赛页，没有对应页面的赛事会显示为「无逐场数据」。</p>
+      <p><b>日期为什么可能看到两个版本。</b>主办方官网通常给出「含线上阶段 + 场馆阶段」的完整赛期，
+        而赛事日历一般只记正赛/场馆阶段。本看板主日期采用后者，主办方口径会作为附加标签显示在卡片内。</p>
+      <p><b>已知存疑项。</b></p>
+      <ul>
+        <li>电竞世界杯 2026 举办地：BLAST 官方页与赛事结果站记为巴黎，另有多个信源记为沙特利雅得。</li>
+        <li>BLAST Rivals 第二季：BLAST 官方公告为 11 月 8–15 日，Liquipedia 记为 11 月 11–15 日。</li>
+        <li>PGL 新加坡 Major：PGL 官网记为 11 月 22 日起，场馆方（新加坡体育城）记为 11 月 25 日–12 月 13 日。</li>
+        <li>PGL 各站的起始日，主办方官网普遍比赛事日历早约 2 天，差异来自统计口径。</li>
+      </ul>
+      <p><b>赛制背景。</b>2026 年 Valve 结束合作伙伴联赛制度，赛事体系全面开放，全年约 30 项一级赛事，
+        分上下两个赛季，各以一届 Major 收口。</p>
+    </div>
+  </details>
+
+  <footer>
+    赛程与比赛数据来自 <a href="https://liquipedia.net/counterstrike/S-Tier_Tournaments/Post_2023" target="_blank" rel="noopener">Liquipedia</a>（CC-BY-SA 3.0），
+    并交叉核对 BLAST.tv、ESL Pro Tour、PGL Esports、新加坡体育城等官方页面。<br>
+    另见：<a href="calendar.html">全年赛历表格版</a> ·
+    <a href="https://github.com/1rgg/CS2-events" target="_blank" rel="noopener">GitHub 仓库</a><br>
+    本站为个人使用而建，与 Valve、ESL、BLAST、PGL 及 Liquipedia 均无关联。时间均按本地时区显示。
+  </footer>
+
+</div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

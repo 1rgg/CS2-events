@@ -1,0 +1,17 @@
+{
+  "name": "cs2-events-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CS2 热门赛事实时看板 —— 纯静态前端 + 零依赖 Node 实时数据代理",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {},
+  "keywords": ["cs2", "counter-strike", "esports", "calendar", "liquipedia"],
+  "license": "MIT"
+}

@@ -1,0 +1,14 @@
+# 运行后自动生成的 Liquipedia 页面缓存
+.cache/
+
+# 依赖（本项目零依赖，留作保险）
+node_modules/
+
+# CI 组装的站点产物
+_site/
+
+# 编辑器
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
