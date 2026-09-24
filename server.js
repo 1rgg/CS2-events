@@ -908,23 +908,85 @@ const server = http.createServer(async (req, res) => {
   serveStatic(req, res, u.pathname);
 });
 
+/* ================================================================
+   7. 启动（含端口占用处理）
+   ================================================================ */
+
+const LINE = '─'.repeat(58);
+
+function banner(port, moved) {
+  console.log(LINE);
+  console.log('  CS2 赛事实时看板');
+  console.log(LINE);
+  if (moved) {
+    console.log('  注意       端口 ' + PORT + ' 已被占用，已自动改用 ' + port);
+    console.log('             想固定端口：PORT=8080 node server.js');
+    console.log(LINE);
+  }
+  console.log('  本地地址   http://localhost:' + port);
+  console.log('  赛事时间轴 /api/live      （缓存 ' + Math.round(CACHE_TTL_MS / 60000) + ' 分钟）');
+  console.log('  逐场比赛   /api/matches   （缓存 ' + Math.round(PAGE_TTL_MS / 3600000) + ' 小时，最多 ' + MATCH_MAX_DAYS + ' 天范围）');
+  console.log(LINE);
+  console.log('  访问节制   最小间隔 ' + MIN_GAP_MS + 'ms · 429 冷却 ' + Math.round(COOLDOWN_MS / 60000) + ' 分钟 · 页面映射 ' + Object.keys(PAGE_MAP.pages).length + ' 条');
+  console.log('  数据来源   Liquipedia（赛历）+ 5EPlay（赛程与战队，浏览器直连）');
+  console.log(LINE);
+  console.log('  提示：/api/live?force=1 与 /api/matches?force=1 可强制刷新。');
+  console.log('       Liquipedia 对高频访问会封禁 IP，请保持默认的请求频率。');
+  console.log('  按 Ctrl+C 停止。');
+  console.log('');
+}
+
+function portHelp(port) {
+  console.log('');
+  console.log(LINE);
+  console.log('  端口 ' + port + ' 已被占用，无法启动。');
+  console.log(LINE);
+  console.log('  最常见的原因是上一次运行的服务还开着。三种解决办法：');
+  console.log('');
+  console.log('    1) 换个端口（最省事）：');
+  console.log('       PORT=8080 node server.js          # macOS / Linux / Git Bash');
+  console.log('       $env:PORT=8080; node server.js    # Windows PowerShell');
+  console.log('');
+  console.log('    2) 找出占用端口的进程再结束它：');
+  console.log('       netstat -ano | findstr :' + port + '     # 看最后一列的 PID');
+  console.log('       taskkill /PID <PID> /F             # Windows');
+  console.log('       lsof -ti:' + port + ' | xargs kill        # macOS / Linux');
+  console.log('');
+  console.log('    3) 切回之前跑着这个服务的终端窗口，按 Ctrl+C。');
+  console.log(LINE);
+  console.log('');
+}
+
 if (require.main === module) {
-  server.listen(PORT, () => {
-    const line = '─'.repeat(58);
-    console.log(line);
-    console.log('  CS2 赛事实时看板');
-    console.log(line);
-    console.log('  本地地址   http://localhost:' + PORT);
-    console.log('  赛事时间轴 /api/live      （缓存 ' + Math.round(CACHE_TTL_MS / 60000) + ' 分钟）');
-    console.log('  逐场比赛   /api/matches   （缓存 ' + Math.round(PAGE_TTL_MS / 3600000) + ' 小时，最多 ' + MATCH_MAX_DAYS + ' 天范围）');
-    console.log(line);
-    console.log('  访问节制   最小间隔 ' + MIN_GAP_MS + 'ms · 429 冷却 ' + Math.round(COOLDOWN_MS / 60000) + ' 分钟 · 页面映射 ' + Object.keys(PAGE_MAP.pages).length + ' 条');
-    console.log('  数据来源   Liquipedia · ' + TIMELINE_PAGE);
-    console.log(line);
-    console.log('  提示：/api/live?force=1 与 /api/matches?force=1 可强制刷新。');
-    console.log('       Liquipedia 对高频访问会封禁 IP，请保持默认的请求频率。');
-    console.log('  按 Ctrl+C 停止。');
-    console.log('');
+  const explicitPort = Boolean(process.env.PORT);
+  const MAX_FALLBACK = 10;
+  let listenPort = PORT;
+  let moved = false;
+  let starting = true;
+
+  server.on('error', (err) => {
+    if (err.code !== 'EADDRINUSE') {
+      console.error('启动失败：' + err.message);
+      process.exit(1);
+    }
+    // 用户显式指定了 PORT → 尊重它，给排查指引而不是偷偷换端口
+    if (explicitPort) {
+      portHelp(listenPort);
+      process.exit(1);
+    }
+    // 用的是默认端口 → 自动往后找一个空闲端口，别让用户对着堆栈发愣
+    if (listenPort - PORT >= MAX_FALLBACK) {
+      portHelp(PORT);
+      process.exit(1);
+    }
+    listenPort += 1;
+    moved = true;
+    starting = true;
+    setImmediate(() => server.listen(listenPort));
+  });
+
+  server.listen(listenPort, () => {
+    if (starting) { starting = false; banner(server.address().port, moved); }
   });
 
   process.on('SIGINT', () => {
