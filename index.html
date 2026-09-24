@@ -78,6 +78,9 @@
     </div>
     <div class="matches" id="matchesPanel"></div>
   </section>
+  <p class="section-foot">
+    逐场对阵与参赛战队来自 <b>5EPlay</b> 第二数据源：展开任意赛事卡片即可查看。
+  </p>
 
   <section class="toolbar" aria-label="筛选">
     <div class="toolbar-inner">
@@ -137,21 +140,26 @@
   <details class="disclosure">
     <summary>数据来源与口径说明</summary>
     <div class="disclosure-body">
-      <p><b>实时层。</b>站点通过本地 Node 代理请求 Liquipedia：赛事日期取自
-        <code>S-Tier Tournaments/Post 2023</code> 页面中的赛事时间轴；
-        逐场比赛则按赛事抓取对应页面的子阶段页（如 <code>/Playoffs</code>、<code>/Stage 3</code>），
-        解析其中的对阵、时间与逐图比分。全程不需要任何 API Key。</p>
-      <p><b>兜底层。</b>若代理不可用（例如直接以 <code>file://</code> 打开，或访问 GitHub Pages 上的托管版），
-        站点自动回落到内置的 <code>data/tournaments.json</code> 快照。赛历功能完整，只是不再自动更新、也没有逐场数据。</p>
-      <p><b>托管版的差异。</b>GitHub Pages 只能托管静态文件，无法运行 Node 代理，因此托管版用的是构建时烘焙进仓库的赛程快照；
-        流水线每天会尝试刷新两次（Liquipedia 对数据中心 IP 较严格，刷新失败时会保留原数据）。
-        想要实时数据，把仓库克隆到本地执行 <code>node server.js</code>。</p>
-      <p><b>为什么需要本地服务。</b>Liquipedia 的 <code>api.php</code> 不返回
-        <code>Access-Control-Allow-Origin</code>，浏览器直连会被 CORS 拦截；其接口条款同时要求
-        使用可识别的 User-Agent，而浏览器不允许自定义该请求头。代理内置缓存并把请求间隔控制在
-        2 秒以上，以遵守对方的接口频率要求。</p>
-      <p><b>逐场数据的限制。</b>为避免给对方接口造成压力，时间范围超过 21 天时不会拉取逐场数据；
-        另外，并非所有赛事都在 Liquipedia 上有独立的比赛页，没有对应页面的赛事会显示为「无逐场数据」。</p>
+      <p><b>两个数据源，分工明确。</b></p>
+      <ul>
+        <li><b>Liquipedia（赛历骨架）</b> —— 全年一级赛事的起止日期、奖金、场馆、冠亚军。
+          经本地 Node 代理请求，取其赛事时间轴。</li>
+        <li><b>5EPlay（第二数据源）</b> —— 展开任意赛事卡片可看：官方中文赛事名、逐场赛程与比分、
+          逐图比分、参赛战队（含队标与世界排名）、名次与奖金分配。
+          <b>它的接口返回 <code>Access-Control-Allow-Origin: *</code>，浏览器可直连</b>，
+          所以托管在 GitHub Pages 的静态版同样能取到这些数据。</li>
+      </ul>
+      <p><b>兜底层。</b>若代理不可用（例如直接以 <code>file://</code> 打开），站点自动回落到内置的
+        <code>data/tournaments.json</code> 快照。赛历功能完整，只是不再自动更新、也没有逐场数据。</p>
+      <p><b>关于 5EPlay 的接口。</b>这是其前端使用的内部接口，未公开授权，随时可能调整或限流。
+        本项目对它的使用是低频、带缓存的，并在拿不到数据时如实说明而不是留白。
+        若某场赛事显示「5EPlay 数据暂时取不到」，稍后再试即可，赛历部分不受影响。</p>
+      <p><b>托管版的差异。</b>GitHub Pages 只能托管静态文件，无法运行 Node 代理，因此
+        <b>赛历</b>部分是构建时烘焙进仓库的快照（流水线每天尝试刷新两次）；
+        但<b>5EPlay 的赛程与战队是浏览器直连获取的，托管版同样实时</b>。
+        想要赛历也实时，把仓库克隆到本地执行 <code>node server.js</code>。</p>
+      <p><b>逐场数据的限制。</b>为避免给对方接口造成压力，Liquipedia 逐场数据超过 21 天范围时不拉取；
+        5EPlay 的数据按赛事按需加载，并在会话内缓存 10 分钟。</p>
       <p><b>日期为什么可能看到两个版本。</b>主办方官网通常给出「含线上阶段 + 场馆阶段」的完整赛期，
         而赛事日历一般只记正赛/场馆阶段。本看板主日期采用后者，主办方口径会作为附加标签显示在卡片内。</p>
       <p><b>已知存疑项。</b></p>
@@ -176,6 +184,7 @@
 
 </div>
 
+<script src="assets/5eplay.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>

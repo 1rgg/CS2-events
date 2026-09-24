@@ -617,6 +617,30 @@
       ? '<div class="progress live"><span style="width:' + Math.round(t._progress * 100) + '%"></span></div>'
       : '';
 
+    /* ---- 第二数据源（5EPlay）：赛程与参赛战队 ---- */
+    var fiveE = (window.Hub5E && window.Hub5E.summaryFor) ? window.Hub5E.summaryFor(t.id) : null;
+    var srcBlock = '';
+    if (fiveE && fiveE.ttId) {
+      var d = detailState[t.id];
+      var open = d && d.open;
+      var hint = [];
+      if (fiveE.teamCount) hint.push('参赛 ' + fiveE.teamCount + ' 队');
+      if (fiveE.winTeam) hint.push('冠军 ' + fiveE.winTeam);
+      srcBlock =
+        '<div class="event-src">' +
+          '<button type="button" class="src-toggle' + (open ? ' open' : '') + '"' +
+            ' data-tt="' + esc(fiveE.ttId) + '" data-local="' + esc(t.id) + '"' +
+            ' aria-expanded="' + (open ? 'true' : 'false') + '"' +
+            ' aria-controls="d-' + esc(t.id) + '">' +
+            (open ? '收起赛程与战队' : '展开赛程与战队') +
+            '<span class="src-caret" aria-hidden="true"></span>' +
+          '</button>' +
+          (hint.length ? '<span class="src-hint">' + esc(hint.join(' · ')) + '</span>' : '') +
+          '<a class="src-link" href="https://event.5eplay.com/csgo/events/' + esc(fiveE.ttId) + '"' +
+            ' target="_blank" rel="noopener">5EPlay ↗</a>' +
+        '</div>';
+    }
+
     return '<article class="' + cls + '" id="e-' + esc(t.id) + '">' +
       '<div class="event-dates">' +
         '<div class="range">' + fmtRange(t.start, t.end) + '</div>' +
@@ -633,8 +657,183 @@
         (stages ? '<div class="event-stages">' + stages + '</div>' : '') +
         (t.note ? '<p class="event-note">' + esc(t.note) + '</p>' : '') +
         progress +
+        srcBlock +
       '</div>' +
+      (fiveE && fiveE.ttId && detailState[t.id] && detailState[t.id].open
+        ? '<div class="event-detail" id="d-' + esc(t.id) + '">' + renderDetail(t.id) + '</div>'
+        : '') +
     '</article>';
+  }
+
+  /* ============================ 渲染：5EPlay 详情 ============================ */
+
+  var detailState = {};      // localId -> { open, tab, loading, data, error }
+
+  function renderDetail(localId) {
+    var d = detailState[localId];
+    if (!d) return '';
+    if (d.loading) {
+      return '<div class="detail-tabs"><span class="detail-loading">正在从 5EPlay 加载…</span></div>' +
+        '<div class="skeleton" style="height:44px"></div>' +
+        '<div class="skeleton" style="height:44px"></div>';
+    }
+    if (d.error || !d.data) {
+      return '<div class="detail-tabs"><span class="detail-loading">' +
+        '5EPlay 数据暂时取不到（接口未公开授权，可能被限流或调整）。赛历部分不受影响。</span></div>';
+    }
+
+    var data = d.data;
+    var matches = data.matches || [];
+    var teams = data.teams || [];
+    var ranks = data.ranks || [];
+    var tab = d.tab || (matches.length ? 'matches' : (teams.length ? 'teams' : 'ranks'));
+
+    var tabs = [];
+    tabs.push(tabBtn(localId, 'matches', '赛程', matches.length));
+    tabs.push(tabBtn(localId, 'teams', '参赛战队', teams.length));
+    tabs.push(tabBtn(localId, 'ranks',
+      data.ranksAreProjected ? '奖金分配' : '名次与奖金', ranks.length));
+
+    var basic = data.basic;
+    var head = '';
+    if (basic && (basic.nameZh || basic.nameEn)) {
+      var bits = [];
+      if (basic.nameZh) bits.push('官方中文名：<b>' + esc(basic.nameZh) + '</b>');
+      if (basic.nameEn) bits.push('英文名：' + esc(basic.nameEn));
+      if (basic.bonus) bits.push('奖池：' + esc(basic.bonus));
+      if (basic.city) bits.push('地点：' + esc(basic.city));
+      head = '<div class="detail-head">' + bits.join(' <span class="dotsep">·</span> ') + '</div>';
+    }
+
+    var body;
+    if (tab === 'teams') body = renderTeamGrid(teams);
+    else if (tab === 'ranks') body = renderRanks(ranks, data.ranksAreProjected);
+    else body = renderFiveEMatches(matches);
+
+    return '<div class="detail-tabs">' + tabs.join('') + '</div>' + head + body;
+  }
+
+  function tabBtn(localId, key, label, n) {
+    var d = detailState[localId];
+    var active = (d.tab || '') === key;
+    return '<button type="button" class="detail-tab' + (active ? ' active' : '') + '"' +
+      ' data-tab="' + key + '" data-local="' + esc(localId) + '">' +
+      label + (n ? '<span class="tab-n">' + n + '</span>' : '') + '</button>';
+  }
+
+  function renderFiveEMatches(matches) {
+    if (!matches.length) {
+      return '<div class="detail-empty">该赛事在 5EPlay 上还没有可展示的对阵（可能尚未开赛或为预选阶段）。</div>';
+    }
+    return '<div class="mlist">' + matches.map(matchLine).join('') + '</div>';
+  }
+
+  function matchLine(m) {
+    var t = m.startTs ? new Date(m.startTs) : null;
+    var timeText = t ? (pad(t.getMonth() + 1) + '-' + pad(t.getDate())) : '—';
+    var subText = t ? (pad(t.getHours()) + ':' + pad(t.getMinutes()) + ' ' + WEEKDAYS[t.getDay()]) : '';
+
+    var known = m.score1 !== null && m.score2 !== null;
+    var win1 = known && m.score1 > m.score2;
+    var win2 = known && m.score2 > m.score1;
+
+    var cls = m.state === 'live' ? 'live' : (m.state === 'finished' ? 'done' : 'next');
+    var txt = m.state === 'live' ? '进行中' : (m.state === 'finished' ? '已结束' : '未开始');
+
+    var maps = (m.maps || []).map(function (x) {
+      var c = 'mapchip';
+      if (x.s1 !== null && x.s2 !== null && x.s1 !== x.s2) c += (x.s1 > x.s2 ? ' win1' : ' win2');
+      var sc = (x.s1 !== null && x.s2 !== null) ? ' ' + x.s1 + ':' + x.s2 : '';
+      return '<span class="' + c + '">' + esc(x.name) + sc + '</span>';
+    }).join('');
+
+    function team(name, logo, score, win, lose) {
+      return '<div class="ml-team' + (win ? ' win' : (lose ? ' lose' : '')) + '">' +
+        (logo ? '<img class="ml-logo" src="' + esc(logo) + '" alt="" loading="lazy" referrerpolicy="no-referrer">'
+              : '<span class="ml-logo ml-logo-empty"></span>') +
+        '<span class="ml-name">' + esc(name || '待定') + '</span>' +
+        (known ? '<span class="ml-score">' + score + '</span>' : '') +
+      '</div>';
+    }
+
+    return '<div class="mline">' +
+      '<div class="ml-time"><b class="tnum">' + timeText + '</b><span>' + subText + '</span></div>' +
+      '<div class="ml-body">' +
+        '<div class="ml-round">' + esc([m.stage, m.round].filter(Boolean).join(' · ') || '对局') +
+          (m.bo ? '<span class="ml-bo">' + esc(m.bo) + '</span>' : '') +
+          (m.tags ? '<span class="ml-tag">' + esc(m.tags) + '</span>' : '') +
+        '</div>' +
+        team(m.team1, m.logo1, m.score1, win1, known && !win1) +
+        team(m.team2, m.logo2, m.score2, win2, known && !win2) +
+        (maps ? '<div class="match-maps">' + maps + '</div>' : '') +
+      '</div>' +
+      '<div class="ml-state"><span class="mstate ' + cls + '">' + txt + '</span></div>' +
+    '</div>';
+  }
+
+  function renderTeamGrid(teams) {
+    if (!teams.length) {
+      return '<div class="detail-empty">5EPlay 尚未公布参赛战队名单（通常在开赛前陆续放出）。</div>';
+    }
+    return '<div class="tgrid">' + teams.map(function (t) {
+      return '<div class="tcard" title="' + esc(t.name + (t.rank ? ' · 世界排名 #' + t.rank : '')) + '">' +
+        (t.logo ? '<img src="' + esc(t.logo) + '" alt="" loading="lazy" referrerpolicy="no-referrer">'
+                : '<span class="tlogo-empty"></span>') +
+        '<span class="tname">' + esc(t.name) + '</span>' +
+        (t.rank ? '<span class="trank">#' + esc(t.rank) + '</span>' : '') +
+      '</div>';
+    }).join('') + '</div>';
+  }
+
+  function renderRanks(ranks, projected) {
+    if (!ranks.length) {
+      return '<div class="detail-empty">该赛事还没有名次与奖金数据。</div>';
+    }
+    var head = projected
+      ? '<div class="detail-note">该赛事尚未结束，下面是<b>奖池分配方案</b>（名次待定）。</div>'
+      : '';
+    return head + '<div class="rlist">' + ranks.map(function (r) {
+      var name = /^tbd$/i.test(String(r.name).trim()) ? '待定' : r.name;
+      return '<div class="rline">' +
+        '<span class="rrank">' + esc(r.rank) + '</span>' +
+        (r.logo ? '<img class="ml-logo" src="' + esc(r.logo) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') +
+        '<span class="rname' + (/待定/.test(name) ? ' tbd' : '') + '">' + esc(name) + '</span>' +
+        '<span class="rbonus">' + esc(r.bonus || '—') + '</span>' +
+      '</div>';
+    }).join('') + '</div>';
+  }
+
+  /* ---- 交互：展开 / 切页 ---- */
+
+  function toggleDetail(localId, ttId) {
+    var d = detailState[localId];
+    if (d && d.open) {
+      d.open = false;
+      render();
+      return;
+    }
+    detailState[localId] = { open: true, tab: 'matches', loading: true, data: null, error: null };
+    render();
+    if (!window.Hub5E) {
+      detailState[localId] = { open: true, loading: false, error: 'no-source' };
+      render();
+      return;
+    }
+    window.Hub5E.load(ttId).then(function (res) {
+      var st = detailState[localId];
+      if (!st || !st.open) return;
+      st.loading = false;
+      if (res && res.ok) { st.data = res; st.error = null; }
+      else { st.error = (res && res.error) || 'failed'; }
+      render();
+    });
+  }
+
+  function switchTab(localId, tab) {
+    var d = detailState[localId];
+    if (!d) return;
+    d.tab = tab;
+    render();
   }
 
   /* ============================ 渲染入口 ============================ */
@@ -863,16 +1062,28 @@
     var exp = el('exportIcs');
     if (exp) exp.addEventListener('click', exportICS);
 
-    // 事件委托：年度导航跳转 + 空态按钮
+    // 事件委托：年度导航跳转 + 5EPlay 展开/切页 + 空态按钮
     document.addEventListener('click', function (ev) {
-      var target = ev.target.closest ? ev.target.closest('[data-goto]') : null;
+      var cl = ev.target.closest ? ev.target.closest.bind(ev.target) : null;
+      if (!cl) return;
+
+      var toggle = cl('[data-tt]');
+      if (toggle) {
+        toggleDetail(toggle.getAttribute('data-local'), toggle.getAttribute('data-tt'));
+        return;
+      }
+
+      var tab = cl('[data-tab]');
+      if (tab) {
+        switchTab(tab.getAttribute('data-local'), tab.getAttribute('data-tab'));
+        return;
+      }
+
+      var target = cl('[data-goto]');
       if (target) {
         var id = target.getAttribute('data-goto');
-        // 若当前筛选隐藏了该赛事，先重置筛选
         var t = null;
-        if (state.data) {
-          t = state.data.tournaments.filter(function (x) { return x.id === id; })[0];
-        }
+        if (state.data) t = state.data.tournaments.filter(function (x) { return x.id === id; })[0];
         if (t) {
           var today = startOfDay(new Date());
           var d = decorate([t], today)[0];
@@ -885,7 +1096,8 @@
         setTimeout(function () { scrollToEvent(id); }, 60);
         return;
       }
-      var act = ev.target.closest ? ev.target.closest('[data-action]') : null;
+
+      var act = cl('[data-action]');
       if (act) handleAction(act.getAttribute('data-action'));
     });
 
@@ -990,8 +1202,14 @@
     wire();
     el('list').innerHTML = '<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
 
-    fetchJSON(SNAPSHOT_URL)
-      .then(function (j) {
+    // 先取第二数据源的映射表（本地文件，不消耗外部请求），拿到后再渲染
+    var mapReady = (window.Hub5E && window.Hub5E.getMap)
+      ? window.Hub5E.getMap().catch(function () { return {}; })
+      : Promise.resolve({});
+
+    Promise.all([fetchJSON(SNAPSHOT_URL), mapReady])
+      .then(function (r) {
+        var j = r[0];
         state.snapshotRaw = j;
         state.data = mergeAvail(j, null);
         state.source = 'snapshot';

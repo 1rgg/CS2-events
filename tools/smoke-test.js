@@ -19,6 +19,7 @@ const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
 const appSrc = fs.readFileSync(path.join(ROOT, 'assets', 'app.js'), 'utf8');
+const fiveSrc = fs.readFileSync(path.join(ROOT, 'assets', '5eplay.js'), 'utf8');
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const snapshot = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'tournaments.json'), 'utf8'));
 
@@ -59,19 +60,27 @@ check('存在比赛面板容器', html.includes('id="matchesPanel"'));
 function makeHarness(opts) {
   const nodes = new Map();
   const groups = new Map();
+  const docListeners = {};
 
   function makeNode(id) {
-    return {
+    const attrs = {};
+    const node = {
       id, textContent: '', innerHTML: '', className: '', style: {},
-      _attrs: {}, _listeners: {},
+      _attrs: attrs, _listeners: {},
       addEventListener(ev, fn) { (this._listeners[ev] = this._listeners[ev] || []).push(fn); },
-      setAttribute(k, v) { this._attrs[k] = String(v); },
-      getAttribute(k) { return this._attrs[k] !== undefined ? this._attrs[k] : null; },
+      setAttribute(k, v) { attrs[k] = String(v); },
+      getAttribute(k) { return attrs[k] !== undefined ? attrs[k] : null; },
       classList: { add() {}, remove() {} },
       scrollIntoView() {},
-      click() { (this._listeners.click || []).forEach((f) => f({ target: this, preventDefault() {} })); },
-      closest() { return null; }
+      click() { (this._listeners.click || []).forEach((f) => f({ target: node, preventDefault() {} })); },
+      /** 支持 [data-xxx] 形式的选择器，供事件委托使用 */
+      closest(sel) {
+        const m = sel.match(/^\[data-([a-z-]+)\]$/);
+        if (m && attrs['data-' + m[1]] !== undefined) return node;
+        return null;
+      }
     };
+    return node;
   }
 
   const getNode = (id) => {
@@ -102,7 +111,7 @@ function makeHarness(opts) {
       if (g) return groups.get(g[1]) || [];
       return [];
     },
-    addEventListener() {},
+    addEventListener(ev, fn) { (docListeners[ev] = docListeners[ev] || []).push(fn); },
     createElement: () => ({ style: {}, set href(v) {}, set download(v) {}, click() {} }),
     body: { appendChild() {}, removeChild() {} }
   };
@@ -119,6 +128,9 @@ function makeHarness(opts) {
       if (u.indexOf('tournaments.json') >= 0) {
         return Promise.resolve({ ok: true, json: () => Promise.resolve(snapshot) });
       }
+      if (u.indexOf('5eplay-map.json') >= 0) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ map: opts.fiveEMap || {} }) });
+      }
       if (u.indexOf('/api/live') >= 0) {
         if (opts.liveFails) return Promise.reject(new Error('offline'));
         return Promise.resolve({
@@ -134,30 +146,79 @@ function makeHarness(opts) {
       }
       if (u.indexOf('/api/matches') >= 0) {
         if (opts.matchesFails) return Promise.reject(new Error('network'));
-        if (opts.matchesRangeTooLarge) {
-          return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, matches: [] }) });
-        }
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ ok: true, matches: opts.matches || [] })
         });
       }
+      // ---- 5EPlay（真实客户端会直连这些地址）----
+      if (u.indexOf('esports-data.5eplaycdn.com') >= 0) {
+        if (opts.fiveEFails) return Promise.reject(new Error('blocked'));
+        if (u.indexOf('/introduction') >= 0) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(FIVE_E_INTRO) });
+        }
+        if (u.indexOf('/csgo/matches') >= 0) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(FIVE_E_MATCHES) });
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true, data: {} }) });
+      }
       return Promise.reject(new Error('unexpected url ' + u));
     }
   };
+
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;
-  sandbox.Blob = function (parts) { this.parts = parts; };
+  sandbox.Blob = function () {};
   sandbox.URL = Object.assign(function () {}, {
-    createObjectURL: () => 'blob:x', revokeObjectURL: () => {}
+    createURL: () => 'blob:x',
+    createObjectURL: () => 'blob:x',
+    revokeObjectURL: () => {}
   });
   sandbox.AbortController = undefined;
 
-  vm.createContext(sandbox);
-  new vm.Script(appSrc, { filename: 'app.js' }).runInContext(sandbox);
+  // 第二数据源：优先用真实的 assets/5eplay.js，其次用桩
+  if (opts.realFiveE) {
+    sandbox.sessionStorage = (() => {
+      let store = {};
+      return {
+        getItem: (k) => (k in store ? store[k] : null),
+        setItem: (k, v) => { store[k] = String(v); },
+        removeItem: (k) => { delete store[k]; }
+      };
+    })();
+    sandbox.location = { hostname: 'localhost', protocol: 'http:' };
+    vm.createContext(sandbox);
+    new vm.Script(fiveSrc, { filename: '5eplay.js' }).runInContext(sandbox);
+    new vm.Script(appSrc, { filename: 'app.js' }).runInContext(sandbox);
+  } else {
+    if (opts.fiveEMap) {
+      sandbox.Hub5E = {
+        getMap: () => Promise.resolve(opts.fiveEMap),
+        summaryFor: (id) => opts.fiveEMap[id] || null,
+        load: () => {
+          if (opts.fiveELoadFails) return Promise.resolve({ ok: false, error: 'network' });
+          return Promise.resolve(opts.fiveEData || { ok: true, matches: [], teams: [], ranks: [], basic: null });
+        }
+      };
+    }
+    vm.createContext(sandbox);
+    new vm.Script(appSrc, { filename: 'app.js' }).runInContext(sandbox);
+  }
+
+  /** 模拟点击：构造带 closest 的事件对象，派发给 document 上的委托监听 */
+  function dispatchClick(attrs) {
+    const fake = {
+      getAttribute(k) { return attrs[k] !== undefined ? attrs[k] : null; },
+      closest(sel) {
+        const m = sel.match(/^\[data-([a-z-]+)\]$/);
+        return (m && attrs['data-' + m[1]] !== undefined) ? fake : null;
+      }
+    };
+    (docListeners.click || []).forEach((fn) => fn({ target: fake, preventDefault() {} }));
+  }
 
   return {
-    sandbox, nodes, getNode, chipDefs,
+    sandbox, nodes, getNode, chipDefs, dispatchClick,
     clickChip: (attr, value) => {
       const c = chipDefs.find((x) => x.attr === attr && x.value === value);
       if (c) c.node.click();
@@ -170,6 +231,77 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
 async function drain(n) {
   for (let i = 0; i < (n || 8); i++) await tick();
 }
+
+/* ---------------- 5EPlay fixtures（结构取自真实响应） ---------------- */
+
+const FIVE_E_MATCHES = {
+  success: true,
+  errcode: 0,
+  data: {
+    live_matches: [],
+    matches: [
+      {
+        mc_info: {
+          id: 'csgo_mc_1', plan_ts: '1782054000', round_name: '决赛', format: '5',
+          tt_stage: '淘汰赛', tt_stage_desc: '淘汰赛 决赛', tags: '巅峰对决',
+          t1_info: { disp_name: 'FURIA', logo: 'https://oss.5eplay.com/f.png', id: 'csgo_tm_8297' },
+          t2_info: { disp_name: 'Falcons', logo: 'https://oss.5eplay.com/b.png', id: 'csgo_tm_11283' }
+        },
+        state: {
+          status: '2', live_status: '', t1_score: '0', t2_score: '3',
+          bout_states: [
+            { map_name: 'Mirage', t1_score: '8', t2_score: '13', status: '2' },
+            { map_name: 'Anubis', t1_score: '8', t2_score: '13', status: '2' },
+            { map_name: 'Dust2', t1_score: '10', t2_score: '13', status: '2' }
+          ]
+        }
+      },
+      {
+        mc_info: {
+          id: 'csgo_mc_2', plan_ts: '1813000000', round_name: '1/4决赛', format: '3',
+          tt_stage: '淘汰赛', tt_stage_desc: '淘汰赛 1/4决赛', tags: '',
+          t1_info: { disp_name: 'Vitality', logo: null, id: 'csgo_tm_9565' },
+          t2_info: { disp_name: 'G2', logo: null, id: 'csgo_tm_1' }
+        },
+        state: { status: '0', live_status: '', t1_score: '0', t2_score: '0', bout_states: [] }
+      }
+    ]
+  }
+};
+
+const FIVE_E_INTRO = {
+  success: true,
+  errcode: 0,
+  data: {
+    basic: {
+      name_zh: 'IEM 科隆 Major 2026', name_en: 'IEM Cologne Major 2026',
+      bonus: '$1,170,000', city_name: '德国，科隆',
+      start_time: '2026-06-11 00:00:00', end_time: '2026-06-22 04:00:00',
+      status: 'past', grade: '1', tt_id: 'csgo_tt_8301'
+    },
+    teams: [
+      { name: 'Vitality', logo: 'https://oss.5eplay.com/v.png', global_rank: '3', region_name: '欧洲' },
+      { name: 'FURIA', logo: 'https://oss.5eplay.com/f.png', global_rank: '7', region_name: '美洲' },
+      { name: 'Falcons', logo: null, global_rank: '5', region_name: '欧洲' }
+    ],
+    team_rank: [
+      { rank: '1', bonus: '$500,000', team: { name: 'Falcons', logo: 'https://oss.5eplay.com/b.png' } },
+      { rank: '2', bonus: '$170,000', team: { name: 'FURIA', logo: 'https://oss.5eplay.com/f.png' } }
+    ]
+  }
+};
+
+const FIVE_E_MAP_FIXTURE = {
+  'iem-cologne-major': {
+    ttId: 'csgo_tt_8301',
+    nameZh: 'IEM 科隆 Major 2026',
+    gradeLabel: 'Major',
+    bonus: '$1,170,000',
+    city: '德国，科隆',
+    teamCount: 16,
+    winTeam: 'Falcons'
+  }
+};
 
 const MATCHES = [
   {
@@ -293,6 +425,74 @@ const MATCHES = [
     check('年度导航仍然渲染', C.getNode('yearnavTrack').innerHTML.indexOf('yearnav-bar') >= 0);
     check('逐场区给出明确说明', C.getNode('matchesPanel').innerHTML.indexOf('本地服务') >= 0);
     check('指标卡仍然填充', /^\d+$/.test(C.getNode('mChina').textContent));
+  }
+
+  /* ---- 场景 D：5EPlay 第二数据源（真实客户端 + 展开交互）---- */
+  console.log('\n[7] 场景 D：5EPlay 展开赛程与战队');
+  const D = makeHarness({ realFiveE: true, fiveEMap: FIVE_E_MAP_FIXTURE });
+  await drain();
+  {
+    const list = D.getNode('list').innerHTML;
+    check('已加载第二数据源映射', typeof D.sandbox.Hub5E === 'object');
+    check('有映射的赛事出现展开按钮', list.indexOf('data-tt="csgo_tt_8301"') >= 0,
+      list.slice(Math.max(0, list.indexOf('event-src')), list.indexOf('event-src') + 160));
+    check('展开按钮带参赛队数提示', list.indexOf('参赛 16 队') >= 0);
+    check('提供 5EPlay 外链', list.indexOf('event.5eplay.com/csgo/events/csgo_tt_8301') >= 0);
+
+    // 展开
+    D.dispatchClick({ 'data-tt': 'csgo_tt_8301', 'data-local': 'iem-cologne-major' });
+    await drain(4);
+
+    const detail = D.getNode('list').innerHTML;
+    check('详情容器已渲染', detail.indexOf('class="event-detail"') >= 0);
+    check('显示官方面板头部（中文名）', detail.indexOf('官方中文名') >= 0 && detail.indexOf('IEM 科隆 Major 2026') >= 0);
+    check('提供三个分页', detail.indexOf('data-tab="matches"') >= 0 &&
+      detail.indexOf('data-tab="teams"') >= 0 && detail.indexOf('data-tab="ranks"') >= 0);
+    check('分页带数量角标', detail.indexOf('tab-n') >= 0);
+
+    // 赛程内容
+    check('赛程渲染出对阵', detail.indexOf('FURIA') >= 0 && detail.indexOf('Falcons') >= 0);
+    check('渲染系列赛比分', detail.indexOf('>3<') >= 0 && detail.indexOf('>0<') >= 0);
+    check('渲染轮次与 Bo 制', detail.indexOf('决赛') >= 0 && detail.indexOf('Bo5') >= 0);
+    check('渲染逐图比分', detail.indexOf('Mirage') >= 0 && detail.indexOf('8:13') >= 0);
+    check('逐图胜方有区分样式', detail.indexOf('mapchip win2') >= 0 || detail.indexOf('mapchip win1') >= 0);
+    check('已结束状态标签', detail.indexOf('已结束') >= 0);
+    check('未开始状态标签', detail.indexOf('未开始') >= 0);
+    check('未开打的对局不显示 0:0', detail.indexOf('Vitality') >= 0);
+    check('队标图片已渲染', detail.indexOf('oss.5eplay.com/f.png') >= 0);
+
+    // 切到参赛战队
+    D.dispatchClick({ 'data-tab': 'teams', 'data-local': 'iem-cologne-major' });
+    await drain(2);
+    const teamsHtml = D.getNode('list').innerHTML;
+    check('参赛战队页渲染队伍卡片', teamsHtml.indexOf('class="tcard"') >= 0);
+    check('战队卡片含世界排名', teamsHtml.indexOf('#3') >= 0 && teamsHtml.indexOf('#7') >= 0);
+    check('参赛战队共 3 张卡', (teamsHtml.match(/class="tcard"/g) || []).length === 3);
+
+    // 切到名次
+    D.dispatchClick({ 'data-tab': 'ranks', 'data-local': 'iem-cologne-major' });
+    await drain(2);
+    const ranksHtml = D.getNode('list').innerHTML;
+    check('名次页渲染名次行', ranksHtml.indexOf('class="rline"') >= 0);
+    check('名次行含奖金', ranksHtml.indexOf('$500,000') >= 0);
+    check('名次共 2 行', (ranksHtml.match(/class="rline"/g) || []).length === 2);
+
+    // 收起
+    D.dispatchClick({ 'data-tt': 'csgo_tt_8301', 'data-local': 'iem-cologne-major' });
+    await drain(2);
+    check('再次点击可收起', D.getNode('list').innerHTML.indexOf('class="event-detail"') < 0);
+  }
+
+  /* ---- 场景 E：5EPlay 不可用 ---- */
+  console.log('\n[8] 场景 E：5EPlay 被限流/不可用');
+  const E = makeHarness({ realFiveE: true, fiveEMap: FIVE_E_MAP_FIXTURE, fiveEFails: true });
+  await drain();
+  {
+    E.dispatchClick({ 'data-tt': 'csgo_tt_8301', 'data-local': 'iem-cologne-major' });
+    await drain(4);
+    const h = E.getNode('list').innerHTML;
+    check('失败时给出可读说明而非空白', h.indexOf('5EPlay 数据暂时取不到') >= 0);
+    check('赛历本身不受影响', h.indexOf('class="event ') >= 0 || h.indexOf('class="event"') >= 0);
   }
 
   console.log('\n' + '─'.repeat(48));
