@@ -1,5 +1,7 @@
 # CS2 赛事实时看板
 
+[![Deploy to GitHub Pages](https://github.com/1rgg/CS2-events/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/1rgg/CS2-events/actions/workflows/deploy-pages.yml)
+
 查看 CS2 热门赛事的静态网站：全年赛历、当日对阵与逐图比分、时间范围筛选。纯前端 + 一个零依赖的 Node 数据代理。
 
 > **在线版**：<https://1rgg.github.io/CS2-events/> —— 托管版只有静态赛历（见下方「托管版 vs 本地版」）。
