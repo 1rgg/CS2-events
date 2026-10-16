@@ -19,15 +19,18 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # 固定镜像版本：ubuntu-latest 将于 2026-10-19 起迁移到 Ubuntu 26，
+    # 显式钉住可避免构建环境的意外变化。
+    runs-on: ubuntu-24.04
     steps:
       - name: 检出
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 准备 Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          # 不再使用已进入维护末期的 Node 20；24 为当前 Active LTS。
+          node-version: '24'
 
       - name: 运行解析器测试
         run: node tools/parser-test.js
@@ -60,7 +63,7 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
