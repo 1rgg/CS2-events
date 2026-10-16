@@ -23,6 +23,35 @@ const fiveSrc = fs.readFileSync(path.join(ROOT, 'assets', '5eplay.js'), 'utf8');
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const snapshot = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'tournaments.json'), 'utf8'));
 
+/**
+ * 固定虚拟时钟。
+ *
+ * app.js 会用「当前年份」画年度导航、用「开始时间是否已过」推算比赛状态，
+ * 若测试跑在真实时钟上，断言就会随运行日期漂移：快照只含 2026 赛季数据，
+ * 一进入下一年年度导航便渲染不出色条。这里把沙箱内的 Date 钉在快照赛季内，
+ * 使测试结果与运行日历无关（快照换季后锚点自动跟随）。
+ */
+const CLOCK_MS = Date.UTC(snapshot.meta && snapshot.meta.season ? snapshot.meta.season : 2026, 6, 1, 12, 0);
+const CLOCK_SHIFT_MS = CLOCK_MS - Date.now();
+
+function makeFixedDate() {
+  const RealDate = Date;
+  const RealNow = Date.now;
+  function FixedDate(...args) {
+    if (!(this instanceof FixedDate)) return new RealDate(RealNow() + CLOCK_SHIFT_MS).toString();
+    if (args.length === 0) return new RealDate(RealNow() + CLOCK_SHIFT_MS);
+    return new RealDate(...args);
+  }
+  FixedDate.prototype = RealDate.prototype;
+  FixedDate.now = () => RealNow() + CLOCK_SHIFT_MS;
+  FixedDate.parse = RealDate.parse;
+  FixedDate.UTC = RealDate.UTC;
+  Object.setPrototypeOf(FixedDate, RealDate);
+  return FixedDate;
+}
+
+const FixedDate = makeFixedDate();
+
 let pass = 0, fail = 0;
 function check(label, ok, detail) {
   if (ok) { pass++; console.log('  \u2713 ' + label); }
@@ -117,7 +146,8 @@ function makeHarness(opts) {
   };
 
   const sandbox = {
-    console, Date, Math, JSON, Object, Array, String, Number, Boolean,
+    // 注入固定时钟，使渲染结果不随运行日期漂移
+    console, Date: FixedDate, Math, JSON, Object, Array, String, Number, Boolean,
     RegExp, Error, Promise, isNaN, parseInt, parseFloat,
     setTimeout: (fn) => { if (typeof fn === 'function') fn(); return 0; },
     clearTimeout() {}, clearInterval() {},
@@ -303,12 +333,17 @@ const FIVE_E_MAP_FIXTURE = {
   }
 };
 
+// 时间基准取沙箱固定时钟而非运行时刻：前端会用「开始时间是否已过」推算状态，
+// 写死的日期一旦过期，未开打的比赛就会被算成进行中，测试随运行日期腐化。
+const NOW_MS = CLOCK_MS;
+const HOUR_MS = 3600 * 1000;
+
 const MATCHES = [
   {
     id: 'm1', tournamentId: 'esl-pro-league-s24', tournamentName: 'ESL 职业联赛 S24',
     tournamentMeta: '卡托维兹 · 波兰', stage: 'Playoffs',
     team1: 'Team Spirit', team2: 'G2 Esports',
-    startUTC: Date.UTC(2026, 9, 9, 13, 45), finished: true,
+    startUTC: NOW_MS - 2 * HOUR_MS, finished: true,
     score1: 2, score2: 1, bo: 'Bo3',
     maps: [
       { map: 'Overpass', s1: 9, s2: 13, finished: true },
@@ -320,7 +355,7 @@ const MATCHES = [
     id: 'm2', tournamentId: 'esl-pro-league-s24', tournamentName: 'ESL 职业联赛 S24',
     tournamentMeta: '卡托维兹 · 波兰', stage: 'Playoffs',
     team1: 'Team Vitality', team2: null,
-    startUTC: Date.UTC(2026, 9, 9, 17, 0), finished: false,
+    startUTC: NOW_MS + 2 * HOUR_MS, finished: false,
     score1: null, score2: null, bo: null, maps: []
   }
 ];
